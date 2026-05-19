@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}New Note{% endblock %}
+{% block breadcrumb %}Notes / New{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title">New <span class="accent">Secure Note</span></h1></div>
+<div class="form-card">
+  <form method="POST" class="vault-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input type="text" name="title" class="form-input" placeholder="Note title" required autofocus/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <input type="text" name="category" class="form-input" placeholder="General" value="General"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Content (will be encrypted)</label>
+      <textarea name="content" class="form-input form-textarea" rows="12" placeholder="Write your secure note here…"></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Encrypt & Save</button>
+      <a href="{{ url_for('vault.notes') }}" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

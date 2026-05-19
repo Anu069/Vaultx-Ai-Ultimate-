@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Recycle Bin{% endblock %}
+{% block breadcrumb %}Recycle Bin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><span class="accent">Recycle</span> Bin</h1>
+  <p class="page-sub">Deleted items – restore or permanently delete</p>
+</div>
+
+{% if not passwords and not notes and not files %}
+<div class="empty-state">
+  <div class="empty-icon">🗑</div>
+  <h3>Recycle bin is empty</h3>
+  <p>Deleted vault items will appear here for recovery.</p>
+</div>
+{% endif %}
+
+{% if passwords %}
+<div class="card mb-lg">
+  <div class="card-header"><h3 class="card-title">Deleted Passwords</h3></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Title</th><th>Category</th><th>Deleted</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for p in passwords %}
+        <tr id="pw-row-{{ p.id }}">
+          <td>{{ p.title }}</td>
+          <td><span class="cat-tag">{{ p.category }}</span></td>
+          <td class="mono text-sm">{{ p.deleted_at.strftime('%b %d, %Y') if p.deleted_at else '—' }}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-ghost btn-sm" onclick="restoreItem('password', {{ p.id }}, 'pw-row-{{ p.id }}')">Restore</button>
+              <button class="btn btn-danger btn-sm" onclick="permDelete('password', {{ p.id }}, 'pw-row-{{ p.id }}')">Delete Forever</button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if notes %}
+<div class="card mb-lg">
+  <div class="card-header"><h3 class="card-title">Deleted Notes</h3></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Title</th><th>Category</th><th>Deleted</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for n in notes %}
+        <tr id="note-row-{{ n.id }}">
+          <td>{{ n.title }}</td>
+          <td><span class="cat-tag">{{ n.category }}</span></td>
+          <td class="mono text-sm">{{ n.deleted_at.strftime('%b %d, %Y') if n.deleted_at else '—' }}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-ghost btn-sm" onclick="restoreItem('note', {{ n.id }}, 'note-row-{{ n.id }}')">Restore</button>
+              <button class="btn btn-danger btn-sm" onclick="permDelete('note', {{ n.id }}, 'note-row-{{ n.id }}')">Delete Forever</button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if files %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Deleted Files</h3></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Filename</th><th>Size</th><th>Deleted</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for f in files %}
+        <tr id="file-row-{{ f.id }}">
+          <td>{{ f.original_name }}</td>
+          <td class="text-sm">{{ (f.file_size / 1024)|round(1) if f.file_size else 0 }} KB</td>
+          <td class="mono text-sm">{{ f.deleted_at.strftime('%b %d, %Y') if f.deleted_at else '—' }}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-ghost btn-sm" onclick="restoreItem('file', {{ f.id }}, 'file-row-{{ f.id }}')">Restore</button>
+              <button class="btn btn-danger btn-sm" onclick="permDelete('file', {{ f.id }}, 'file-row-{{ f.id }}')">Delete Forever</button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function restoreItem(type, id, rowId) {
+  const r = await fetch(`/vault/restore/${type}/${id}`, {method:'POST'});
+  const d = await r.json();
+  if (d.success) { document.getElementById(rowId)?.remove(); showToast('Item restored successfully'); }
+}
+async function permDelete(type, id, rowId) {
+  if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+  const r = await fetch(`/vault/permanent-delete/${type}/${id}`, {method:'POST'});
+  const d = await r.json();
+  if (d.success) { document.getElementById(rowId)?.remove(); showToast('Permanently deleted'); }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block breadcrumb %}Audit Log & Login Activity{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><span class="accent">Security</span> Audit Log</h1>
+  <p class="page-sub">Full record of account activity and login events</p>
+</div>
+
+<div class="grid-2col">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Login Activity</h3>
+      <span class="badge badge-info">Last 20</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Status</th><th>IP</th><th>Threat</th></tr></thead>
+        <tbody>
+          {% for l in logins %}
+          <tr>
+            <td class="mono text-sm">{{ l.created_at.strftime('%b %d %H:%M') }}</td>
+            <td><span class="badge badge-{{ 'success' if l.status == 'success' else 'danger' }}">{{ l.status }}</span></td>
+            <td class="mono text-sm">{{ l.ip_address or '—' }}</td>
+            <td><span class="badge badge-{{ 'danger' if l.threat_level == 'high' else ('warn' if l.threat_level == 'medium' else 'ghost') }}">{{ l.threat_level }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-muted">No login activity yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Action Log</h3>
+      <span class="badge badge-info">Last 50</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Action</th><th>Risk</th></tr></thead>
+        <tbody>
+          {% for l in logs %}
+          <tr>
+            <td class="mono text-sm">{{ l.created_at.strftime('%b %d %H:%M') }}</td>
+            <td class="text-sm">{{ l.action.replace('_',' ') }}</td>
+            <td><span class="badge badge-{{ 'danger' if l.risk_level == 'high' else ('warn' if l.risk_level == 'medium' else 'ghost') }}">{{ l.risk_level }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="text-center text-muted">No logs yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

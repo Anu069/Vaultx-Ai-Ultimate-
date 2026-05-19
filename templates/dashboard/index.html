@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Welcome back, <span class="accent">{{ current_user.username }}</span></h1>
+    <p class="page-sub">{{ health.label }} vault · Last login: {{ current_user.last_login.strftime('%b %d, %H:%M') if current_user.last_login else 'First login' }}</p>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('vault.add_password') }}" class="btn btn-primary">+ Add Password</a>
+  </div>
+</div>
+
+<!-- ALERTS -->
+{% if alerts %}
+<div class="alerts-row">
+  {% for alert in alerts %}
+  {% if not alert.is_read %}
+  <div class="alert-banner alert-{{ alert.severity }}" id="alert-{{ alert.id }}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>{{ alert.message }}</span>
+    <button onclick="dismissAlert({{ alert.id }})">×</button>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- STAT CARDS -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-blue">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ total_passwords }}</div>
+      <div class="stat-label">Passwords</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-green">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ total_notes }}</div>
+      <div class="stat-label">Secure Notes</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-purple">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ total_files }}</div>
+      <div class="stat-label">Vault Files</div>
+    </div>
+  </div>
+  <div class="stat-card stat-card-warn">
+    <div class="stat-icon stat-red">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ weak_count }}</div>
+      <div class="stat-label">Weak Passwords</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="dashboard-grid">
+  <!-- VAULT HEALTH GAUGE -->
+  <div class="card card-health">
+    <div class="card-header">
+      <h3 class="card-title">Vault Health Score</h3>
+      <a href="{{ url_for('ai.index') }}" class="btn-link">AI Advisor →</a>
+    </div>
+    <div class="health-gauge-wrap">
+      <canvas id="healthGauge" width="200" height="120"></canvas>
+      <div class="health-score-label">
+        <span class="health-num" style="color:{{ health.color }}">{{ health.score }}</span>
+        <span class="health-txt">{{ health.label }}</span>
+      </div>
+    </div>
+    <div class="health-details">
+      {% for rec in health.recommendations[:3] %}
+      <div class="rec-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>{{ rec }}</span>
+      </div>
+      {% else %}
+      <div class="rec-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Your vault is in great shape!</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- PASSWORD BREAKDOWN -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Password Health</h3>
+    </div>
+    <div class="pw-breakdown">
+      {% set total = health.details.get('total', 1) %}
+      {% set strong_pct = ((health.details.get('strong', 0) / total) * 100)|int if total > 0 else 0 %}
+      {% set weak_pct = ((health.details.get('weak', 0) / total) * 100)|int if total > 0 else 0 %}
+      {% set reused_pct = ((health.details.get('reused', 0) / total) * 100)|int if total > 0 else 0 %}
+      <div class="breakdown-item">
+        <div class="breakdown-label">
+          <span>Strong</span>
+          <span class="text-green">{{ health.details.get('strong', 0) }}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill fill-green" style="width:{{ strong_pct }}%"></div></div>
+      </div>
+      <div class="breakdown-item">
+        <div class="breakdown-label">
+          <span>Weak</span>
+          <span class="text-red">{{ health.details.get('weak', 0) }}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill fill-red" style="width:{{ weak_pct }}%"></div></div>
+      </div>
+      <div class="breakdown-item">
+        <div class="breakdown-label">
+          <span>Reused</span>
+          <span class="text-warn">{{ health.details.get('reused', 0) }}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill fill-warn" style="width:{{ reused_pct }}%"></div></div>
+      </div>
+      <div class="breakdown-item">
+        <div class="breakdown-label">
+          <span>Expired</span>
+          <span class="text-red">{{ health.details.get('expired', 0) }}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill fill-red" style="width:{{ ((health.details.get('expired', 0) / total) * 100)|int if total > 0 else 0 }}%"></div></div>
+      </div>
+    </div>
+    {% if expiring_soon %}
+    <div class="expiry-warn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      {{ expiring_soon|length }} password(s) expiring within 7 days
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- LOGIN TIMELINE -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Login Activity</h3>
+      <a href="{{ url_for('auth.activity') }}" class="btn-link">View All →</a>
+    </div>
+    <div class="timeline-chart" id="loginTimeline" data-points="{{ login_timeline | tojson }}"></div>
+  </div>
+
+  <!-- RECENT LOGS -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Recent Activity</h3>
+      <a href="{{ url_for('auth.activity') }}" class="btn-link">Full Log →</a>
+    </div>
+    <div class="activity-list">
+      {% for log in recent_logs %}
+      <div class="activity-item">
+        <div class="activity-dot dot-{{ log.risk_level }}"></div>
+        <div class="activity-body">
+          <span class="activity-action">{{ log.action.replace('_', ' ') }}</span>
+          <span class="activity-time mono">{{ log.created_at.strftime('%b %d %H:%M') }}</span>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-muted text-center">No recent activity</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- CATEGORIES -->
+  {% if categories %}
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Password Categories</h3></div>
+    <div class="category-list">
+      {% for cat, count in categories.items() %}
+      <a href="{{ url_for('vault.passwords', category=cat) }}" class="cat-chip">
+        <span>{{ cat }}</span>
+        <span class="cat-count">{{ count }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- QUICK ACTIONS -->
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Quick Actions</h3></div>
+    <div class="quick-actions">
+      <a href="{{ url_for('vault.add_password') }}" class="quick-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Add Password
+      </a>
+      <a href="{{ url_for('vault.add_note') }}" class="quick-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        New Note
+      </a>
+      <a href="{{ url_for('ai.index') }}" class="quick-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4"/></svg>
+        AI Advisor
+      </a>
+      <a href="{{ url_for('browser.index') }}" class="quick-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Private Browser
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Health gauge
+const canvas = document.getElementById('healthGauge');
+if (canvas) {
+  const ctx = canvas.getContext('2d');
+  const score = {{ health.score }};
+  const color = '{{ health.color }}';
+  const cx = 100, cy = 100, r = 75;
+  const start = Math.PI, end = Math.PI * 2;
+  
+  ctx.clearRect(0, 0, 200, 120);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, start, end);
+  ctx.strokeStyle = '#1e1e2e';
+  ctx.lineWidth = 12;
+  ctx.stroke();
+  
+  const fillEnd = start + (score / 100) * Math.PI;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, start, fillEnd);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+  ctx.stroke();
+}
+
+// Timeline chart
+const tl = document.getElementById('loginTimeline');
+if (tl) {
+  const data = JSON.parse(tl.dataset.points || '[]');
+  const max = Math.max(...data.map(d => d.count), 1);
+  tl.innerHTML = `<div class="tl-bars">${data.map(d => `
+    <div class="tl-bar-wrap" title="${d.day}: ${d.count} logins">
+      <div class="tl-bar" style="height:${Math.max(4, (d.count/max)*80)}px;background:var(--primary);opacity:${d.count > 0 ? 0.8 : 0.2}"></div>
+      <span class="tl-label">${d.day.split(' ')[1]}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+async function dismissAlert(id) {
+  await fetch('/alerts/read/'+id, {method:'POST'});
+  document.getElementById('alert-'+id).remove();
+}
+</script>
+{% endblock %}

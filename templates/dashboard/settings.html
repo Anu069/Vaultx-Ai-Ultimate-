@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Vault <span class="accent">Settings</span></h1>
+  <p class="page-sub">Customize your VaultX experience and security preferences</p>
+</div>
+
+<div class="settings-grid">
+  <!-- SECURITY SETTINGS -->
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">🔐 Security</h3></div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Two-Factor Authentication</div>
+        <div class="setting-desc">Require OTP email on every login</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggle2fa"
+          {% if current_user.two_fa_enabled %}checked{% endif %}
+          onchange="toggle2FA(this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Stealth Mode</div>
+        <div class="setting-desc">Blur sensitive info until hovered</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggleStealth"
+          {% if current_user.stealth_mode %}checked{% endif %}
+          onchange="toggleStealth(this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Honey Vault</div>
+        <div class="setting-desc">Decoy vault flag for intrusion detection</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggleHoney"
+          {% if current_user.honey_vault_enabled %}checked{% endif %}
+          onchange="toggleHoney(this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Panic Password</div>
+        <div class="setting-desc">A password that triggers instant logout</div>
+      </div>
+      <button class="btn btn-ghost btn-sm"
+        onclick="document.getElementById('panicPwForm').classList.toggle('hidden')">
+        Configure
+      </button>
+    </div>
+    <form id="panicPwForm" class="panic-form hidden" onsubmit="setPanicPw(event)">
+      <div class="input-wrap" style="flex:1">
+        <input type="password" id="panicPwInput" class="form-input"
+          placeholder="Set panic password" minlength="4"/>
+      </div>
+      <button type="submit" class="btn btn-danger btn-sm">Set</button>
+    </form>
+  </div>
+
+  <!-- APPEARANCE -->
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">🎨 Appearance</h3></div>
+    <p class="text-muted text-sm mb-md">Current theme: <strong>{{ current_user.theme }}</strong></p>
+    <div class="theme-grid">
+      {% set themes = [
+        ('dark-cyber','Cyber Dark','#00ff9f','#0a0a0f'),
+        ('dark-ocean','Ocean Dark','#0ea5e9','#050d1f'),
+        ('dark-red','Red Alert','#ef4444','#0f0505'),
+        ('dark-purple','Purple Haze','#a855f7','#0d0514'),
+        ('dark-amber','Amber Night','#f59e0b','#100800'),
+        ('light-clean','Light Clean','#0066ff','#f8fafc')
+      ] %}
+      {% for tid, tname, tcolor, tbg in themes %}
+      <button class="theme-swatch {% if current_user.theme == tid %}active{% endif %}"
+        style="--sw-color:{{ tcolor }};--sw-bg:{{ tbg }}"
+        onclick="setTheme('{{ tid }}', this)">
+        <span class="sw-dot"></span>
+        <span class="sw-name">{{ tname }}</span>
+      </button>
+      {% endfor %}
+    </div>
+
+    <div class="setting-item mt-md">
+      <div class="setting-info">
+        <div class="setting-name">Custom Theme</div>
+        <div class="setting-desc">Build your own color scheme</div>
+      </div>
+      <button class="btn btn-ghost btn-sm"
+        onclick="document.getElementById('customTheme').classList.toggle('hidden')">
+        Open Editor
+      </button>
+    </div>
+    <div id="customTheme" class="custom-theme-editor hidden">
+      <div class="color-grid">
+        <div class="color-pick"><label>Primary</label><input type="color" id="cp_primary" value="#00ff9f"/></div>
+        <div class="color-pick"><label>Secondary</label><input type="color" id="cp_secondary" value="#0066ff"/></div>
+        <div class="color-pick"><label>Background</label><input type="color" id="cp_bg" value="#0a0a0f"/></div>
+        <div class="color-pick"><label>Surface</label><input type="color" id="cp_surface" value="#12121f"/></div>
+        <div class="color-pick"><label>Text</label><input type="color" id="cp_text" value="#e0e0e0"/></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveCustomTheme()">Apply Custom Theme</button>
+    </div>
+  </div>
+
+  <!-- UX PREFERENCES -->
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">⚙️ Preferences</h3></div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Sound Effects</div>
+        <div class="setting-desc">UI click sounds</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggleSound"
+          {% if current_user.sound_enabled %}checked{% endif %}
+          onchange="updatePref('sound_enabled', this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info"><div class="setting-name">Animations</div></div>
+      <select class="form-select" onchange="updatePref('animation_level', this.value)">
+        <option value="full" {% if current_user.animation_level == 'full' %}selected{% endif %}>Full</option>
+        <option value="reduced" {% if current_user.animation_level == 'reduced' %}selected{% endif %}>Reduced</option>
+        <option value="none" {% if current_user.animation_level == 'none' %}selected{% endif %}>None</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info"><div class="setting-name">Cursor Style</div></div>
+      <select class="form-select" onchange="updatePref('cursor_style', this.value)">
+        <option value="default" {% if current_user.cursor_style == 'default' %}selected{% endif %}>Default</option>
+        <option value="crosshair" {% if current_user.cursor_style == 'crosshair' %}selected{% endif %}>Crosshair</option>
+        <option value="dot" {% if current_user.cursor_style == 'dot' %}selected{% endif %}>Dot</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info"><div class="setting-name">Layout</div></div>
+      <select class="form-select" onchange="updatePref('layout', this.value)">
+        <option value="default" {% if current_user.layout == 'default' %}selected{% endif %}>Default</option>
+        <option value="compact" {% if current_user.layout == 'compact' %}selected{% endif %}>Compact</option>
+        <option value="wide" {% if current_user.layout == 'wide' %}selected{% endif %}>Wide</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ACCOUNT INFO -->
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">👤 Account</h3></div>
+    <div class="account-info">
+      <div class="acc-row"><span class="acc-key">Username</span><span class="acc-val mono">{{ current_user.username }}</span></div>
+      <div class="acc-row"><span class="acc-key">Email</span><span class="acc-val mono">{{ current_user.email }}</span></div>
+      <div class="acc-row"><span class="acc-key">Member Since</span><span class="acc-val">{{ current_user.created_at.strftime('%B %Y') }}</span></div>
+      <div class="acc-row">
+        <span class="acc-key">2FA</span>
+        <span class="acc-val">
+          <span class="badge badge-{{ 'success' if current_user.two_fa_enabled else 'warn' }}">
+            {{ 'Enabled' if current_user.two_fa_enabled else 'Disabled' }}
+          </span>
+        </span>
+      </div>
+      <div class="acc-row">
+        <span class="acc-key">Email Verified</span>
+        <span class="acc-val">
+          <span class="badge badge-{{ 'success' if current_user.is_verified else 'danger' }}">
+            {{ 'Verified' if current_user.is_verified else 'Unverified' }}
+          </span>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── 2FA Toggle ── sends JSON
+async function toggle2FA(enabled) {
+  try {
+    const r = await fetch('/auth/settings/2fa', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({enabled})
+    });
+    const d = await r.json();
+    if (d.success) showToast('2FA ' + (enabled ? 'enabled' : 'disabled'));
+    else showToast('Failed to update 2FA', 'error');
+  } catch(e) { showToast('Error updating 2FA', 'error'); }
+}
+
+// ── Stealth Mode ──
+async function toggleStealth(enabled) {
+  const fd = new FormData();
+  fd.append('action', 'toggle_stealth');
+  const r = await fetch('/settings', {method:'POST', body: fd});
+  const d = await r.json();
+  if (d.success) {
+    document.body.classList.toggle('stealth-mode', enabled);
+    showToast('Stealth mode ' + (enabled ? 'on' : 'off'));
+  }
+}
+
+// ── Honey Vault ──
+async function toggleHoney(enabled) {
+  const fd = new FormData();
+  fd.append('action', 'toggle_honey');
+  const r = await fetch('/settings', {method:'POST', body: fd});
+  const d = await r.json();
+  if (d.success) showToast('Honey vault ' + (enabled ? 'activated' : 'deactivated'));
+}
+
+// ── Theme ──
+async function setTheme(theme, btn) {
+  document.querySelectorAll('.theme-swatch').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const fd = new FormData();
+  fd.append('action', 'update_theme');
+  fd.append('theme', theme);
+  await fetch('/settings', {method:'POST', body: fd});
+  document.documentElement.setAttribute('data-theme', theme);
+  showToast('Theme applied: ' + theme);
+}
+
+// ── Custom Theme ──
+async function saveCustomTheme() {
+  const fd = new FormData();
+  fd.append('action', 'save_custom_theme');
+  fd.append('primary_color', document.getElementById('cp_primary').value);
+  fd.append('secondary_color', document.getElementById('cp_secondary').value);
+  fd.append('bg_color', document.getElementById('cp_bg').value);
+  fd.append('surface_color', document.getElementById('cp_surface').value);
+  fd.append('text_color', document.getElementById('cp_text').value);
+  const r = await fetch('/settings', {method:'POST', body: fd});
+  const d = await r.json();
+  if (d.success) showToast('Custom theme saved! Refresh to apply fully.');
+  else showToast('Failed to save theme', 'error');
+}
+
+// ── Preferences ──
+async function updatePref(key, val) {
+  const fd = new FormData();
+  fd.append('action', 'update_preferences');
+  fd.append(key, String(val));
+  const r = await fetch('/settings', {method:'POST', body: fd});
+  const d = await r.json();
+  if (d.success) showToast('Preference updated');
+}
+
+// ── Panic Password ──
+async function setPanicPw(e) {
+  e.preventDefault();
+  const pw = document.getElementById('panicPwInput').value.trim();
+  if (!pw) { showToast('Please enter a panic password', 'error'); return; }
+  const fd = new FormData();
+  fd.append('action', 'set_panic_password');
+  fd.append('panic_password', pw);
+  const r = await fetch('/settings', {method:'POST', body: fd});
+  const d = await r.json();
+  if (d.success) {
+    document.getElementById('panicPwInput').value = '';
+    document.getElementById('panicPwForm').classList.add('hidden');
+    showToast('Panic password set successfully');
+  } else {
+    showToast('Failed to set panic password', 'error');
+  }
+}
+</script>
+{% endblock %}

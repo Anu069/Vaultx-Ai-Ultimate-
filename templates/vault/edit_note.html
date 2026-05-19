@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Edit Note{% endblock %}
+{% block breadcrumb %}Notes / Edit{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title">Edit <span class="accent">Note</span></h1></div>
+<div class="form-card">
+  <form method="POST" class="vault-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input type="text" name="title" class="form-input" value="{{ note.title }}" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <input type="text" name="category" class="form-input" value="{{ note.category or 'General' }}"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Content</label>
+      <textarea name="content" class="form-input form-textarea" rows="12">{{ note._content }}</textarea>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{{ url_for('vault.notes') }}" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

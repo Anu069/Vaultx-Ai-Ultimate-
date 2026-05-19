@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Private Browser{% endblock %}
+{% block breadcrumb %}Private Browser{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><span class="accent">Private</span> Browser</h1>
+    <p class="page-sub">Sandboxed • No history • Auto cookie clear • Tracker blocked</p>
+  </div>
+  <button class="btn btn-danger" onclick="wipeSession()">🧹 Wipe Session</button>
+</div>
+
+<div class="browser-notice card mb-md">
+  <div class="notice-grid">
+    <div class="notice-item">
+      <span class="notice-icon">🚫</span>
+      <span>No browsing history stored</span>
+    </div>
+    <div class="notice-item">
+      <span class="notice-icon">🍪</span>
+      <span>Cookies cleared on exit</span>
+    </div>
+    <div class="notice-item">
+      <span class="notice-icon">📡</span>
+      <span>Tracker scripts blocked</span>
+    </div>
+    <div class="notice-item">
+      <span class="notice-icon">🔒</span>
+      <span>Session isolated from main vault</span>
+    </div>
+  </div>
+</div>
+
+<div class="browser-toolbar card">
+  <div class="browser-bar">
+    <div class="browser-controls">
+      <button class="browser-btn" onclick="goBack()" title="Back">←</button>
+      <button class="browser-btn" onclick="goForward()" title="Forward">→</button>
+      <button class="browser-btn" onclick="reloadFrame()" title="Reload">↺</button>
+    </div>
+    <div class="url-bar-wrap">
+      <span class="https-badge">🔒</span>
+      <input type="text" id="urlInput" class="url-bar" placeholder="Enter URL (https://...)" value="https://duckduckgo.com" onkeydown="if(event.key==='Enter')navigate()"/>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="navigate()">Go</button>
+  </div>
+</div>
+
+<div class="browser-frame-wrap">
+  <iframe id="privateBrowser" src="about:blank" class="private-browser-iframe"
+    sandbox="allow-forms allow-scripts allow-same-origin allow-popups"
+    referrerpolicy="no-referrer"
+    title="Private Browser Sandbox">
+  </iframe>
+  <div class="browser-overlay" id="browserOverlay">
+    <div class="browser-start">
+      <div class="browser-start-icon">🌐</div>
+      <h3>Private Browsing Session</h3>
+      <p>Enter a URL above to start browsing privately.<br>This session is sandboxed and isolated.</p>
+      <div class="browser-shortcuts">
+        <button class="shortcut-btn" onclick="loadUrl('https://duckduckgo.com')">DuckDuckGo</button>
+        <button class="shortcut-btn" onclick="loadUrl('https://haveibeenpwned.com')">HaveIBeenPwned</button>
+        <button class="shortcut-btn" onclick="loadUrl('https://virustotal.com')">VirusTotal</button>
+        <button class="shortcut-btn" onclick="loadUrl('https://shodan.io')">Shodan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="browser-status card mt-md">
+  <div id="sessionLog" class="session-log">
+    <div class="log-entry"><span class="log-time mono">{{ now.strftime('%H:%M:%S') if now else '--:--:--' }}</span><span>Private session started — all activity sandboxed</span></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const frame = document.getElementById('privateBrowser');
+const overlay = document.getElementById('browserOverlay');
+const log = document.getElementById('sessionLog');
+const urlInput = document.getElementById('urlInput');
+const navHistory = [];
+let historyIndex = -1;
+
+function addLog(msg) {
+  const t = new Date().toLocaleTimeString();
+  log.innerHTML = `<div class="log-entry"><span class="log-time mono">${t}</span><span>${msg}</span></div>` + log.innerHTML;
+}
+
+function navigate() {
+  let url = urlInput.value.trim();
+  if (!url) return;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+  loadUrl(url);
+}
+
+function loadUrl(url) {
+  urlInput.value = url;
+  overlay.style.display = 'none';
+  frame.src = url;
+  navHistory.push(url);
+  historyIndex = navHistory.length - 1;
+  addLog(`Navigating to: ${url}`);
+}
+
+function goBack() {
+  if (historyIndex > 0) { historyIndex--; frame.src = navHistory[historyIndex]; urlInput.value = navHistory[historyIndex]; }
+}
+function goForward() {
+  if (historyIndex < navHistory.length - 1) { historyIndex++; frame.src = navHistory[historyIndex]; urlInput.value = navHistory[historyIndex]; }
+}
+function reloadFrame() { frame.src = frame.src; addLog('Page reloaded'); }
+
+async function wipeSession() {
+  frame.src = 'about:blank';
+  urlInput.value = '';
+  overlay.style.display = 'flex';
+  navHistory.length = 0;
+  historyIndex = -1;
+  addLog('⚠ Session wiped — all browsing data cleared');
+  await fetch('/browser/clear-session', {method:'POST'});
+  showToast('Browser session wiped securely');
+}
+
+// Auto-wipe on page leave
+window.addEventListener('beforeunload', () => { frame.src = 'about:blank'; });
+</script>
+{% endblock %}

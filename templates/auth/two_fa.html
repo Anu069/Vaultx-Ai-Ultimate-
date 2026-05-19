@@ -1,0 +1,40 @@
+{% extends "auth/base_auth.html" %}
+{% block title %}Two-Factor Auth{% endblock %}
+{% block content %}
+<h2 class="auth-title">Two-Factor Auth</h2>
+<p class="auth-sub">Enter the code sent to <strong>{{ email }}</strong></p>
+
+<form method="POST" action="{{ url_for('auth.two_fa') }}" class="auth-form">
+  <div class="form-group">
+    <label class="form-label">6-Digit OTP</label>
+    <input type="text" name="otp" class="form-input otp-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required autofocus autocomplete="one-time-code" inputmode="numeric" style="text-align:center;letter-spacing:8px;font-size:22px;"/>
+  </div>
+  <button type="submit" class="btn btn-primary btn-full">Verify Identity</button>
+</form>
+
+<div class="auth-links">
+  <button class="auth-link" onclick="resendOtp(this)">Resend Code</button>
+  <span id="resendMsg" style="color:var(--primary);font-size:13px;display:none"></span>
+</div>
+<div class="auth-links">
+  <a href="{{ url_for('auth.login') }}" class="auth-link">Back to Login</a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function resendOtp(btn) {
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  try {
+    const r = await fetch('{{ url_for("auth.resend_otp") }}', {method:'POST'});
+    const d = await r.json();
+    document.getElementById('resendMsg').textContent = d.message;
+    document.getElementById('resendMsg').style.display = 'block';
+    setTimeout(() => { btn.disabled=false; btn.textContent='Resend Code'; }, 30000);
+  } catch(e) { btn.disabled=false; btn.textContent='Resend Code'; }
+}
+document.querySelector('input[name=otp]').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g,'').substring(0,6);
+});
+</script>
+{% endblock %}

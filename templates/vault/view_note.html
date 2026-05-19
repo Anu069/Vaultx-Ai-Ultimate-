@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ note.title }}{% endblock %}
+{% block breadcrumb %}Notes / {{ note.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ note.title }}</h1>
+    <p class="page-sub">{{ note.category }} · {{ note.updated_at.strftime('%B %d, %Y') }}</p>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('vault.edit_note', note_id=note.id) }}" class="btn btn-ghost">Edit</a>
+    <a href="{{ url_for('vault.notes') }}" class="btn btn-ghost">← Back</a>
+  </div>
+</div>
+<div class="note-viewer card">
+  <div class="note-content-body">{{ note._content }}</div>
+</div>
+{% endblock %}

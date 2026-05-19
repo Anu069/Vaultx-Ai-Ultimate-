@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}File Vault{% endblock %}
+{% block breadcrumb %}File Vault{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><span class="accent">File</span> Vault</h1>
+    <p class="page-sub">{{ files|length }} encrypted files</p>
+  </div>
+</div>
+
+<div class="upload-zone card" id="uploadZone">
+  <div class="upload-inner" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <h3>Drop files here or click to upload</h3>
+    <p class="text-muted">Files are encrypted before storage · Max 16MB</p>
+    <p class="text-muted text-sm">Allowed: txt, pdf, png, jpg, doc, docx, zip, csv</p>
+    <input type="file" id="fileInput" style="display:none" accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.zip,.csv" onchange="uploadFile(this.files[0])"/>
+  </div>
+  <div class="upload-progress" id="uploadProgress" style="display:none">
+    <div class="progress-bar"><div class="progress-fill fill-green" id="uploadBar" style="width:0%"></div></div>
+    <span id="uploadMsg" class="text-sm">Encrypting and uploading…</span>
+  </div>
+</div>
+
+{% if files %}
+<div class="files-grid">
+  {% for file in files %}
+  <div class="file-card" data-id="{{ file.id }}">
+    <div class="file-icon">
+      {% if file.file_type and 'image' in file.file_type %}🖼
+      {% elif file.file_type and 'pdf' in file.file_type %}📄
+      {% elif file.file_type and 'zip' in file.file_type %}📦
+      {% else %}📁{% endif %}
+    </div>
+    <div class="file-info">
+      <div class="file-name">{{ file.original_name }}</div>
+      <div class="file-meta text-muted text-xs">
+        {{ (file.file_size / 1024)|round(1) }} KB · {{ file.created_at.strftime('%b %d, %Y') }}
+      </div>
+    </div>
+    <div class="file-actions">
+      <a href="{{ url_for('vault.download_file', file_id=file.id) }}" class="icon-btn" title="Download">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </a>
+      <button class="icon-btn icon-btn-danger" onclick="deleteFile({{ file.id }})" title="Delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">📁</div>
+  <h3>No encrypted files yet</h3>
+  <p>Upload files above to encrypt and store them securely.</p>
+</div>
+{% endif %}
+
+<div class="card mt-lg">
+  <div class="card-header"><h3 class="card-title">Backup Export</h3></div>
+  <p class="text-muted text-sm mb-md">Export an encrypted backup of all your passwords and notes.</p>
+  <form method="POST" action="{{ url_for('vault.export_backup') }}" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <div class="input-wrap" style="flex:1;min-width:200px">
+      <input type="password" name="backup_password" class="form-input" placeholder="Backup encryption password" required/>
+    </div>
+    <button type="submit" class="btn btn-primary">Export Encrypted Backup</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]); });
+
+async function uploadFile(file) {
+  if (!file) return;
+  const prog = document.getElementById('uploadProgress');
+  const bar = document.getElementById('uploadBar');
+  const msg = document.getElementById('uploadMsg');
+  prog.style.display = 'block';
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('category', 'General');
+  
+  bar.style.width = '30%';
+  msg.textContent = 'Encrypting file…';
+  
+  try {
+    const r = await fetch('/vault/files/upload', {method:'POST', body: formData});
+    bar.style.width = '100%';
+    const d = await r.json();
+    if (d.success) {
+      msg.textContent = d.message;
+      showToast(d.message);
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      msg.textContent = 'Error: ' + d.message;
+      showToast(d.message, 'error');
+    }
+  } catch(e) {
+    msg.textContent = 'Upload failed';
+    showToast('Upload failed', 'error');
+  }
+}
+
+async function deleteFile(id) {
+  if (!confirm('Move file to recycle bin?')) return;
+  const r = await fetch('/vault/files/'+id+'/delete', {method:'POST'});
+  if ((await r.json()).success) { document.querySelector('.file-card[data-id="'+id+'"]').remove(); showToast('Moved to recycle bin'); }
+}
+</script>
+{% endblock %}

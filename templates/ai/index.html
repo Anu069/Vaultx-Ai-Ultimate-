@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}AI Security{% endblock %}
+{% block breadcrumb %}AI Security Intelligence{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title"><span class="accent">AI</span> Security Intelligence</h1>
+    <p class="page-sub">Powered by real-time threat analysis and machine learning</p>
+  </div>
+</div>
+
+<div class="ai-grid">
+  <!-- AI ADVISOR CHAT -->
+  <div class="card card-wide ai-advisor-card">
+    <div class="card-header">
+      <div class="ai-badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        AI Security Advisor
+      </div>
+      <span class="status-dot online"></span>
+    </div>
+    <div class="ai-chat" id="aiChat">
+      <div class="ai-message ai-bot">
+        <div class="ai-avatar">AI</div>
+        <div class="ai-bubble">Hello! I'm your VaultX AI Security Advisor. Ask me anything about passwords, phishing, data breaches, or how to improve your vault security. How can I help you today?</div>
+      </div>
+    </div>
+    <div class="ai-input-row">
+      <div class="quick-queries">
+        <button class="qquery-btn" onclick="sendQuery('How can I improve my vault security?')">Improve Security</button>
+        <button class="qquery-btn" onclick="sendQuery('What makes a password strong?')">Password Tips</button>
+        <button class="qquery-btn" onclick="sendQuery('How do I detect phishing emails?')">Phishing Defense</button>
+        <button class="qquery-btn" onclick="sendQuery('Analyze my current vault health')">Vault Analysis</button>
+      </div>
+      <div class="ai-input-wrap">
+        <input type="text" id="aiInput" class="form-input" placeholder="Ask about your security…" onkeydown="if(event.key==='Enter')sendAiQuery()"/>
+        <button class="btn btn-primary" onclick="sendAiQuery()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHISHING DETECTOR -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">🎣 Phishing Link Detector</h3>
+    </div>
+    <p class="text-muted text-sm mb-md">Paste a URL to check if it's a phishing attempt</p>
+    <div class="input-wrap mb-md">
+      <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <input type="url" id="phishUrl" class="form-input" placeholder="https://suspicious-site.com"/>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="checkPhishing()">Scan URL</button>
+    <div id="phishResult" class="scan-result mt-md" style="display:none"></div>
+  </div>
+
+  <!-- PASSWORD RISK ANALYZER -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">🔍 Password Risk Analyzer</h3>
+    </div>
+    <p class="text-muted text-sm mb-md">Analyze the strength and risk profile of any password</p>
+    <div class="input-wrap mb-md">
+      <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <input type="password" id="riskPw" class="form-input" placeholder="Enter password to analyze" oninput="analyzePassword(this.value)"/>
+      <button type="button" class="toggle-pw" onclick="const i=document.getElementById('riskPw');i.type=i.type==='password'?'text':'password'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <div id="riskResult" style="display:none">
+      <div class="strength-bar-wrap">
+        <div class="strength-bar"><div class="strength-fill" id="riskFill"></div></div>
+        <span id="riskLabel" class="strength-label"></span>
+      </div>
+      <div class="risk-breakdown" id="riskBreakdown"></div>
+      <div id="riskIssues" class="risk-issues mt-sm"></div>
+    </div>
+  </div>
+
+  <!-- VAULT HEALTH -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">🛡 Vault Health Score</h3>
+      <button class="btn-link" onclick="refreshHealth()">Refresh</button>
+    </div>
+    <div id="healthPanel">
+      <div class="loading-spin"></div>
+    </div>
+  </div>
+
+  <!-- SECURITY RECOMMENDATIONS -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">💡 Security Recommendations</h3>
+    </div>
+    <div id="recsPanel">
+      <div class="loading-spin"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load health and recommendations on page load
+document.addEventListener('DOMContentLoaded', () => { refreshHealth(); loadRecs(); });
+
+async function refreshHealth() {
+  const panel = document.getElementById('healthPanel');
+  panel.innerHTML = '<div class="loading-spin"></div>';
+  try {
+    const r = await fetch('/ai/vault-health');
+    const d = await r.json();
+    panel.innerHTML = `
+      <div class="health-big">
+        <div class="health-score-circle" style="border-color:${d.color}">
+          <span class="health-big-num" style="color:${d.color}">${d.score}</span>
+          <span class="health-big-label">${d.label}</span>
+        </div>
+      </div>
+      <div class="health-stats">
+        <div class="hstat"><span class="hstat-v">${d.details.total||0}</span><span class="hstat-l">Total</span></div>
+        <div class="hstat"><span class="hstat-v text-red">${d.details.weak||0}</span><span class="hstat-l">Weak</span></div>
+        <div class="hstat"><span class="hstat-v text-warn">${d.details.reused||0}</span><span class="hstat-l">Reused</span></div>
+        <div class="hstat"><span class="hstat-v text-red">${d.details.expired||0}</span><span class="hstat-l">Expired</span></div>
+      </div>`;
+  } catch(e) { panel.innerHTML = '<p class="text-muted">Could not load health data</p>'; }
+}
+
+async function loadRecs() {
+  const panel = document.getElementById('recsPanel');
+  try {
+    const r = await fetch('/ai/recommendations');
+    const d = await r.json();
+    panel.innerHTML = d.recommendations.map((rec, i) => `
+      <div class="rec-row">
+        <span class="rec-num">${i+1}</span>
+        <span>${rec}</span>
+      </div>`).join('');
+  } catch(e) { panel.innerHTML = '<p class="text-muted">Could not load recommendations</p>'; }
+}
+
+async function checkPhishing() {
+  const url = document.getElementById('phishUrl').value.trim();
+  if (!url) { showToast('Please enter a URL', 'error'); return; }
+  const result = document.getElementById('phishResult');
+  result.style.display = 'block';
+  result.innerHTML = '<div class="loading-spin"></div>';
+  try {
+    const r = await fetch('/ai/phishing-check', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url})});
+    const d = await r.json();
+    const colors = {safe:'#00ff9f', low:'#4ade80', medium:'#facc15', high:'#ef4444'};
+    const icons = {safe:'✅', low:'🟡', medium:'⚠️', high:'🚨'};
+    result.innerHTML = `
+      <div class="scan-badge" style="border-color:${colors[d.risk]};color:${colors[d.risk]}">
+        ${icons[d.risk]} Risk Level: <strong>${d.risk.toUpperCase()}</strong> (${d.score}/100)
+      </div>
+      ${d.reasons.length ? `<div class="scan-reasons">${d.reasons.map(r=>`<div class="scan-reason">⚠ ${r}</div>`).join('')}</div>` : '<p class="text-muted text-sm mt-sm">No threats detected</p>'}`;
+  } catch(e) { result.innerHTML = '<p class="text-muted">Scan failed</p>'; }
+}
+
+let analyzeTimer;
+async function analyzePassword(pw) {
+  clearTimeout(analyzeTimer);
+  const result = document.getElementById('riskResult');
+  if (!pw) { result.style.display = 'none'; return; }
+  analyzeTimer = setTimeout(async () => {
+    result.style.display = 'block';
+    try {
+      const r = await fetch('/ai/password-risk', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pw})});
+      const d = await r.json();
+      document.getElementById('riskFill').style.width = d.score+'%';
+      document.getElementById('riskFill').style.background = d.color;
+      document.getElementById('riskLabel').textContent = d.label;
+      document.getElementById('riskLabel').style.color = d.color;
+      document.getElementById('riskBreakdown').innerHTML = `
+        <div class="checks-row">
+          <span class="check-item ${d.has_upper?'pass':'fail'}">A-Z</span>
+          <span class="check-item ${d.has_lower?'pass':'fail'}">a-z</span>
+          <span class="check-item ${d.has_digit?'pass':'fail'}">0-9</span>
+          <span class="check-item ${d.has_special?'pass':'fail'}">!@#</span>
+          <span class="check-item ${d.length>=12?'pass':'fail'}">${d.length} chars</span>
+        </div>`;
+      document.getElementById('riskIssues').innerHTML = d.issues.map(i=>`<div class="issue-item">⚠ ${i}</div>`).join('') + d.suggestions.map(s=>`<div class="suggest-item">💡 ${s}</div>`).join('');
+    } catch(e){}
+  }, 300);
+}
+
+function sendQuery(q) { document.getElementById('aiInput').value = q; sendAiQuery(); }
+
+async function sendAiQuery() {
+  const input = document.getElementById('aiInput');
+  const query = input.value.trim();
+  if (!query) return;
+  
+  const chat = document.getElementById('aiChat');
+  chat.innerHTML += `<div class="ai-message ai-user"><div class="ai-bubble">${escapeHtml(query)}</div></div>`;
+  input.value = '';
+  
+  const loadId = 'load-' + Date.now();
+  chat.innerHTML += `<div class="ai-message ai-bot" id="${loadId}"><div class="ai-avatar">AI</div><div class="ai-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+  chat.scrollTop = chat.scrollHeight;
+  
+  try {
+    const r = await fetch('/ai/advisor', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({query})});
+    const d = await r.json();
+    const loadEl = document.getElementById(loadId);
+    if (loadEl) loadEl.outerHTML = `<div class="ai-message ai-bot"><div class="ai-avatar">AI</div><div class="ai-bubble ai-markdown">${formatMarkdown(d.advice || d.error)}</div></div>`;
+    chat.scrollTop = chat.scrollHeight;
+  } catch(e) {
+    const loadEl = document.getElementById(loadId);
+    if (loadEl) loadEl.outerHTML = `<div class="ai-message ai-bot"><div class="ai-avatar">AI</div><div class="ai-bubble">Sorry, I encountered an error. Please try again.</div></div>`;
+  }
+}
+
+function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function formatMarkdown(t) {
+  if (!t) return '';
+  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+           .replace(/^#{1,3} (.+)$/gm,'<strong>$1</strong>')
+           .replace(/^• (.+)$/gm,'<div class="ai-li">• $1</div>')
+           .replace(/\n/g,'<br>');
+}
+</script>
+{% endblock %}

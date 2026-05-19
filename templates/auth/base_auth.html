@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}VaultX{% endblock %} – Secure Access</title>
+  <link rel="icon" href="{{ url_for('static', filename='icons/favicon.svg') }}" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+</head>
+<body class="auth-body">
+
+<div class="auth-bg">
+  <div class="grid-lines"></div>
+  <div class="glow-orb glow-1"></div>
+  <div class="glow-orb glow-2"></div>
+  <div class="scan-line"></div>
+</div>
+
+<div class="auth-container">
+  <div class="auth-brand">
+    <div class="brand-icon">
+      <svg width="48" height="48" viewBox="0 0 32 32">
+        <path d="M16 2L4 8v8c0 7.7 5.2 14.9 12 17 6.8-2.1 12-9.3 12-17V8L16 2z" fill="none" stroke="var(--primary)" stroke-width="1.5"/>
+        <path d="M12 16l3 3 5-5" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1 class="brand-name">Vault<span>X</span></h1>
+    <p class="brand-tagline">AI-Powered Security Vault</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container">
+    {% for category, message in messages %}
+    <div class="flash flash-{{ category }}">
+      <span>{{ message }}</span>
+      <button onclick="this.parentElement.remove()">×</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <div class="auth-card">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

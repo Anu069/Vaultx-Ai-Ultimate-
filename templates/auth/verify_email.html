@@ -1,0 +1,40 @@
+{% extends "auth/base_auth.html" %}
+{% block title %}Verify Email{% endblock %}
+{% block content %}
+<h2 class="auth-title">Verify Email</h2>
+<p class="auth-sub">We sent a 6-digit code to <strong>{{ email }}</strong></p>
+
+<form method="POST" action="{{ url_for('auth.verify_email') }}" class="auth-form">
+  <div class="form-group">
+    <label class="form-label">OTP Code</label>
+    <div class="otp-inputs">
+      <input type="text" id="otpFull" name="otp" maxlength="6" class="form-input otp-input" placeholder="000000" pattern="[0-9]{6}" required autocomplete="one-time-code" inputmode="numeric"/>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary btn-full">Verify & Continue</button>
+</form>
+
+<div class="auth-links">
+  <button class="auth-link" id="resendBtn" onclick="resendOtp(this)">Resend Code</button>
+  <span id="resendMsg" style="color:var(--primary);font-size:13px;display:none"></span>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function resendOtp(btn) {
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  try {
+    const r = await fetch('{{ url_for("auth.resend_otp") }}', {method:'POST'});
+    const d = await r.json();
+    const msg = document.getElementById('resendMsg');
+    msg.textContent = d.message;
+    msg.style.display = 'block';
+    setTimeout(() => { btn.disabled=false; btn.textContent='Resend Code'; msg.style.display='none'; }, 30000);
+  } catch(e) { btn.disabled=false; btn.textContent='Resend Code'; }
+}
+document.getElementById('otpFull').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '').substring(0, 6);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block breadcrumb %}Admin Panel{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Admin <span class="accent">Panel</span></h1>
+  <p class="page-sub">{{ users|length }} registered users · {{ total_logs }} total audit entries</p>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header"><h3 class="card-title">Registered Users</h3></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Verified</th><th>2FA</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="mono">{{ u.id }}</td>
+          <td><strong>{{ u.username }}</strong></td>
+          <td class="mono text-sm">{{ u.email }}</td>
+          <td><span class="badge badge-{{ 'success' if u.is_verified else 'danger' }}">{{ 'Yes' if u.is_verified else 'No' }}</span></td>
+          <td><span class="badge badge-{{ 'success' if u.two_fa_enabled else 'ghost' }}">{{ 'On' if u.two_fa_enabled else 'Off' }}</span></td>
+          <td class="mono text-sm">{{ u.created_at.strftime('%b %d, %Y') }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.send_alert', user_id=u.id) }}" style="display:flex;gap:8px;flex-wrap:wrap">
+              <input type="text" name="message" class="form-input form-input-sm" placeholder="Alert message…" style="width:180px"/>
+              <select name="severity" class="form-select form-select-sm">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+              <button type="submit" class="btn btn-ghost btn-sm">Send Alert</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Recent System Audit Logs</h3></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>IP</th><th>Risk</th></tr></thead>
+      <tbody>
+        {% for l in recent_logs %}
+        <tr>
+          <td class="mono text-sm">{{ l.created_at.strftime('%b %d %H:%M') }}</td>
+          <td class="mono text-sm">{{ l.user.username }}</td>
+          <td class="text-sm">{{ l.action.replace('_',' ') }}</td>
+          <td class="mono text-sm">{{ l.ip_address or '—' }}</td>
+          <td><span class="badge badge-{{ 'danger' if l.risk_level=='high' else ('warn' if l.risk_level=='medium' else 'ghost') }}">{{ l.risk_level }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
